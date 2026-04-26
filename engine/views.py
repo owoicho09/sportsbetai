@@ -6,8 +6,15 @@ from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
 
 import datetime
+import hashlib
+import hmac
+import json
+import os
+import requests as http_requests
 
 from .models import (
     League,
@@ -15,7 +22,8 @@ from .models import (
     TeamStats,
     Standing,
     Fixture,
-    MatchInsight
+    MatchInsight,
+    BotUser
 )
 
 from .serializers import (
@@ -404,3 +412,146 @@ def _format_insight_response(fixture, insight_obj, from_cache=True):
             "recommended_bet":   insight_obj.recommended_bet,
         }
     }
+
+
+
+# =========================================
+# Paystack Webhook
+# =========================================
+
+@csrf_exempt
+def paystack_webhook(request):
+    """
+    POST /api/webhook/paystack/
+
+    Paystack calls this after every payment event.
+    We verify the signature then grant or revoke premium.
+    """
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    # --- Verify signature ---
+    paystack_secret = os.getenv("PAYSTACK_PUBLIC_KEY", "")
+    signature = request.headers.get("x-paystack-signature", "")
+    computed = hmac.new(
+        paystack_secret.encode("utf-8"),
+        request.body,
+        hashlib.sha512
+    ).hexdigest()
+
+    if signature != computed:
+        print("[WEBHOOK] Invalid signature — rejected")
+        return HttpResponse(status=401)
+
+    # --- Parse payload ---
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        return HttpResponse(status=400)
+
+    event = payload.get("event")
+    data = payload.get("data", {})
+
+    print(f"[WEBHOOK] Event: {event}")
+
+    if event == "charge.success":
+        _handle_charge_success(data)
+
+    elif event in ["subscription.disable", "subscription.not_renew"]:
+        _handle_subscription_disable(data)
+
+    return HttpResponse(status=200)
+
+
+def _extract_telegram_id(data):
+    """
+    Extract telegram_id from Paystack webhook data.
+    We embed it as {telegram_id}@sportsbetai.app in the email field.
+    """
+    # Try metadata first
+    metadata = data.get("metadata", {})
+    if isinstance(metadata, dict):
+        tid = metadata.get("telegram_id")
+        if tid:
+            return int(tid)
+
+    # Fallback: extract from email like 7412345678@sportsbetai.app
+    customer = data.get("customer", {})
+    email = customer.get("email", "")
+    if "@sportsbetai.app" in email:
+        try:
+            return int(email.split("@")[0])
+        except ValueError:
+            pass
+
+    print(f"[WEBHOOK] Could not extract telegram_id from data: {email}")
+    return None
+
+
+def _handle_charge_success(data):
+    """Grant premium immediately when payment confirmed."""
+    telegram_id = _extract_telegram_id(data)
+    if not telegram_id:
+        return
+
+    customer = data.get("customer", {})
+    customer_code = customer.get("customer_code", "")
+
+    # Get or create BotUser
+    user, _ = BotUser.objects.get_or_create(telegram_id=telegram_id)
+    user.is_premium = True
+    user.subscription_start = timezone.now()
+    user.subscription_end = timezone.now() + datetime.timedelta(days=30)
+    user.paystack_customer_code = customer_code
+    user.save()
+
+    print(f"[WEBHOOK] Premium granted — telegram_id={telegram_id}, expires={user.subscription_end}")
+
+    # Notify user on Telegram
+    _send_telegram_message(
+        telegram_id,
+        "🎉 *Payment Confirmed — Premium Activated!*\n\n"
+        "You now have full access to all AI predictions.\n"
+        "Go pick a match and let the AI do the work 🔮\n\n"
+        "Tap /start to begin."
+    )
+
+
+def _handle_subscription_disable(data):
+    """Revoke premium when subscription cancelled or not renewed."""
+    customer_code = data.get("customer", {}).get("customer_code", "")
+    if not customer_code:
+        return
+
+    users = BotUser.objects.filter(paystack_customer_code=customer_code)
+    for user in users:
+        user.is_premium = False
+        user.save()
+        print(f"[WEBHOOK] Premium revoked — telegram_id={user.telegram_id}")
+        _send_telegram_message(
+            user.telegram_id,
+            "⚠️ *Your Premium subscription has ended.*\n\n"
+            "Renew anytime for $5/month to restore full access.\n"
+            "Tap /start to subscribe again."
+        )
+
+
+def _send_telegram_message(telegram_id, text):
+    """Send a message to a Telegram user directly via Bot API."""
+    token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    if not token:
+        print("[WEBHOOK] No TELEGRAM_BOT_TOKEN set")
+        return
+    try:
+        http_requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={
+                "chat_id": telegram_id,
+                "text": text,
+                "parse_mode": "Markdown"
+            },
+            timeout=10
+        )
+        print(f"[WEBHOOK] Telegram message sent to {telegram_id}")
+    except Exception as e:
+        print(f"[WEBHOOK] Failed to send Telegram message: {e}")

@@ -379,3 +379,32 @@ class MatchInsight(models.Model):
             f"Winner: {self.predicted_winner} ({self.confidence}) | "
             f"Bet: {self.recommended_bet}"
         )
+
+
+class BotUser(models.Model):
+    telegram_id = models.BigIntegerField(unique=True)
+    telegram_username = models.CharField(max_length=100, blank=True, null=True)
+    first_name = models.CharField(max_length=100, blank=True, null=True)
+
+    is_premium = models.BooleanField(default=False)
+    subscription_start = models.DateTimeField(null=True, blank=True)
+    subscription_end = models.DateTimeField(null=True, blank=True)
+
+    paystack_customer_code = models.CharField(max_length=100, blank=True, null=True)
+    paystack_subscription_code = models.CharField(max_length=100, blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def is_active_subscriber(self):
+        from django.utils import timezone
+        if not self.is_premium:
+            return False
+        if self.subscription_end and self.subscription_end < timezone.now():
+            self.is_premium = False
+            self.save()
+            return False
+        return True
+
+    def __str__(self):
+        return f"{self.telegram_username or self.telegram_id} — {'Premium' if self.is_premium else 'Free'}"

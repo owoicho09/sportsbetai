@@ -57,6 +57,7 @@ urlpatterns = [
     path('health/', health_check, name='health-check'),
     path('ping/', ping, name='ping'),
     path('fixtures/upcoming/', upcoming_fixtures, name='fixture-upcoming'),
+    path('webhook/paystack/', paystack_webhook, name='paystack-webhook'),
 
     # Custom Endpoints
     path(
