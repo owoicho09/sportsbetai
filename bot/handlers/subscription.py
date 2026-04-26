@@ -29,7 +29,7 @@ load_dotenv()
 # =========================================
 
 ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "0"))
-PAYSTACK_PAYMENT_PAGE = os.getenv("PAYMENT_LINK", "https://your-payment-link.com")
+PAYSTACK_PAYMENT_PAGE = os.getenv("PAYMENT_LINK", "https://paystack.shop/pay/9knp4sqd53")
 
 
 # =========================================
