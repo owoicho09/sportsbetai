@@ -48,3 +48,90 @@ admin.site.register(H2HMatch,H2HMatchAdmin)
 admin.site.register(TeamFeatureStore,TeamFeatureStoreAdmin)
 
 
+from django.contrib import admin
+from .models import BotUser
+
+
+@admin.register(BotUser)
+class BotUserAdmin(admin.ModelAdmin):
+
+    list_display = [
+        "telegram_id",
+        "telegram_username",
+        "first_name",
+        "is_premium",
+        "subscription_start",
+        "subscription_end",
+        "created_at",
+    ]
+
+    list_filter = [
+        "is_premium",
+        "subscription_start",
+        "subscription_end",
+    ]
+
+    search_fields = [
+        "telegram_id",
+        "telegram_username",
+        "first_name",
+    ]
+
+    readonly_fields = [
+        "telegram_id",
+        "telegram_username",
+        "first_name",
+        "paystack_customer_code",
+        "paystack_subscription_code",
+        "created_at",
+        "updated_at",
+    ]
+
+    ordering = ["-created_at"]
+
+    fieldsets = (
+        ("Telegram Info", {
+            "fields": (
+                "telegram_id",
+                "telegram_username",
+                "first_name",
+            )
+        }),
+        ("Subscription", {
+            "fields": (
+                "is_premium",
+                "subscription_start",
+                "subscription_end",
+            )
+        }),
+        ("Paystack", {
+            "fields": (
+                "paystack_customer_code",
+                "paystack_subscription_code",
+            )
+        }),
+        ("Timestamps", {
+            "fields": (
+                "created_at",
+                "updated_at",
+            )
+        }),
+    )
+
+    actions = ["grant_premium", "revoke_premium"]
+
+    @admin.action(description="✅ Grant Premium to selected users")
+    def grant_premium(self, request, queryset):
+        from django.utils import timezone
+        import datetime
+        queryset.update(
+            is_premium=True,
+            subscription_start=timezone.now(),
+            subscription_end=timezone.now() + datetime.timedelta(days=30)
+        )
+        self.message_user(request, f"Premium granted to {queryset.count()} user(s).")
+
+    @admin.action(description="❌ Revoke Premium from selected users")
+    def revoke_premium(self, request, queryset):
+        queryset.update(is_premium=False)
+        self.message_user(request, f"Premium revoked from {queryset.count()} user(s).")
