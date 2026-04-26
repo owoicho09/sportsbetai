@@ -27,7 +27,7 @@ async def insight_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, fi
     await query.answer()
 
     user_id = query.from_user.id
-    premium = is_premium(user_id)
+    premium = await is_premium(user_id)  # ← await fixed
 
     print(f"\n[INSIGHT] fixture_id={fixture_id}, league_id={league_id}, user_id={user_id}, premium={premium}")
 

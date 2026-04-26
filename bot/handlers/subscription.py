@@ -92,7 +92,7 @@ async def subscription_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     print(f"[SUBSCRIPTION] User {user_id} checking subscription status")
 
-    if is_premium(user_id):
+    if await  is_premium(user_id):
         print(f"[SUBSCRIPTION] User {user_id} is premium")
         await query.edit_message_text(
             PREMIUM_ALREADY_ACTIVE,

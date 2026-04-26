@@ -35,15 +35,10 @@ logging.basicConfig(
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 
-# =========================================
-# Central Callback Router
-# =========================================
-
 async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
 
-    # --- Main Menu ---
     if data == "main_menu":
         await query.answer()
         await query.edit_message_text(
@@ -52,16 +47,13 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=main_menu_keyboard()
         )
 
-    # --- Get Prediction → Show Leagues ---
     elif data == "get_prediction":
         await leagues_handler(update, context)
 
-    # --- League Selected → Show Fixtures ---
     elif data.startswith("league_"):
         league_id = data.replace("league_", "")
         await fixtures_handler(update, context, league_id=league_id, page=0)
 
-    # --- Pagination: fixtures_{league_id}_{page} ---
     elif data.startswith("fixtures_"):
         parts = data.split("_")
         if len(parts) == 3:
@@ -72,32 +64,27 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 page = 0
             await fixtures_handler(update, context, league_id=league_id, page=page)
 
-    # --- Fixture Selected → Show Detail ---
     elif data.startswith("fixture_"):
         fixture_id = data.replace("fixture_", "")
         league_id = context.user_data.get("current_league_id", "0")
         context.user_data["current_fixture_id"] = fixture_id
         await fixture_detail_handler(update, context, fixture_id=fixture_id, league_id=league_id)
 
-    # --- Free Preview → Paywall ---
     elif data.startswith("preview_"):
         fixture_id = data.replace("preview_", "")
         await preview_handler(update, context, fixture_id=fixture_id)
 
-    # --- Full AI Prediction (Premium) ---
     elif data.startswith("insight_"):
         fixture_id = data.replace("insight_", "")
         league_id = context.user_data.get("current_league_id", "0")
         await insight_handler(update, context, fixture_id=fixture_id, league_id=league_id)
 
-    # --- Subscription Flow ---
     elif data == "subscription":
         await subscription_handler(update, context)
 
     elif data in ["subscribe", "pay_now"]:
         await subscribe_handler(update, context)
 
-    # --- How It Works ---
     elif data == "how_it_works":
         await query.answer()
         await query.edit_message_text(
@@ -110,10 +97,6 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.answer("Unknown action.", show_alert=False)
 
 
-# =========================================
-# Store league_id in user_data when league is tapped
-# =========================================
-
 async def league_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data = query.data
@@ -125,10 +108,6 @@ async def league_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await callback_router(update, context)
 
 
-# =========================================
-# Entry Point
-# =========================================
-
 def run_bot():
     if not BOT_TOKEN:
         raise ValueError("TELEGRAM_BOT_TOKEN not set in .env")
@@ -138,7 +117,6 @@ def run_bot():
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("grant", grant_handler))
     app.add_handler(CommandHandler("revoke", revoke_handler))
-
     app.add_handler(CallbackQueryHandler(league_router))
 
     print("🤖 SportsBet AI Bot is running...")

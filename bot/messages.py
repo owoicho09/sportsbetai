@@ -23,7 +23,7 @@ HOW_IT_WORKS_MESSAGE = """
 
 *Step 1 — Data*
 We pull live stats from top football APIs.
-Form, injuries, H2H history, home/away record.
+Form, H2H history, home/away record.
 
 *Step 2 — Analysis*
 Our AI processes everything and builds a match profile.
@@ -40,7 +40,6 @@ You get a clear, structured prediction:
 *Step 4 — You decide*
 Use it as your edge. The rest is up to you.
 
----
 💎 *Premium — $5/month*
 Unlimited predictions. Every match. Every week.
 """
@@ -57,15 +56,6 @@ NO_LEAGUES_MESSAGE = """
 Check back soon — we're adding more.
 """
 
-def upcoming_fixtures_message(league_name, page=0):
-    offset = page * 8
-    page_num = page + 1
-    return (
-        f"📅 *{league_name} — Upcoming Fixtures*\n\n"
-        f"Tap a match to see the AI prediction preview.\n"
-        f"_Page {page_num}_"
-    )
-
 NO_FIXTURES_MESSAGE = """
 📭 *No upcoming fixtures found.*
 
@@ -75,54 +65,6 @@ or fixtures haven't been loaded yet.
 Check back closer to the next matchday.
 """
 
-def fixture_detail_message(home, away, league, match_date, match_time, round_, is_premium):
-    base = (
-        f"⚽ *{home} vs {away}*\n\n"
-        f"🏆 {league}\n"
-        f"📅 {match_date}  🕐 {match_time}\n"
-        f"🔄 {round_}\n\n"
-    )
-
-    if is_premium:
-        base += "🔮 *Tap below to get the full AI prediction.*"
-    else:
-        base += (
-            "👁 *Free Preview Available*\n\n"
-            "You'll see a teaser of the analysis.\n"
-            "Unlock full prediction with Premium — *$5/month.*"
-        )
-    return base
-
-def insight_message(home, away, insight):
-    if isinstance(insight, str):
-        # Plain text insight from LLM
-        return (
-            f"🔮 *AI Prediction — {home} vs {away}*\n\n"
-            f"{insight}\n\n"
-            f"_Powered by SportsBet AI_"
-        )
-
-    # Structured insight dict
-    analysis = insight.get("analysis", "")
-    winner = insight.get("predicted_winner", "N/A")
-    confidence = insight.get("confidence", "N/A")
-    btts = insight.get("btts", "N/A")
-    over = insight.get("over_2_5", "N/A")
-    bet = insight.get("recommended_bet", "N/A")
-
-    return (
-        f"🔮 *AI Prediction — {home} vs {away}*\n\n"
-        f"📊 *Analysis:*\n{analysis}\n\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"🏆 *Predicted Winner:* {winner}\n"
-        f"🎯 *Confidence:* {confidence}\n"
-        f"⚽ *BTTS:* {btts}\n"
-        f"📈 *Over 2.5:* {over}\n"
-        f"💡 *Best Bet:* {bet}\n"
-        f"━━━━━━━━━━━━━━━━━━\n\n"
-        f"_Powered by SportsBet AI_"
-    )
-
 TEASER_PAYWALL_MESSAGE = """
 🔒 *Full Prediction Locked*
 
@@ -130,7 +72,7 @@ You've seen the teams and the matchup.
 The full AI breakdown is one step away.
 
 *What's behind the lock:*
-✅ Predicted winner with confidence %
+✅ Predicted winner with confidence rating
 ✅ BTTS probability
 ✅ Over/Under 2.5 analysis
 ✅ Recommended bet
@@ -148,22 +90,11 @@ PAYMENT_INSTRUCTIONS_MESSAGE = """
 *Access:* Unlimited predictions. All matches.
 
 *How to pay:*
-1. Tap the payment link below
-2. Complete payment
-3. Tap "I've Paid" — admin verifies within minutes
-4. You're unlocked instantly ✅
+1. Tap the button below
+2. Complete payment on Paystack
+3. You're unlocked *instantly* ✅
 
-Any issues? Message the admin directly.
-"""
-
-PAID_NOTIFY_MESSAGE = """
-✅ *Payment Received — Verifying...*
-
-Admin has been notified.
-You'll be unlocked within a few minutes.
-
-Once confirmed, come back and tap any fixture
-to get your first prediction 🎯
+_Payment is processed securely by Paystack._
 """
 
 PREMIUM_ALREADY_ACTIVE = """
@@ -174,14 +105,12 @@ Go get your edge 🎯
 """
 
 PREMIUM_GRANTED_MESSAGE = """
-🎉 *Premium Activated!*
+🎉 *Payment Confirmed — You're In!*
 
-Welcome to SportsBet AI Premium.
+Your Premium is now active.
+You have full access to all AI predictions.
 
-You now have full access to every prediction.
-Go pick a match and let the AI do the work 🔮
-
-Tap /start to begin.
+Tap below to get your first prediction 👇
 """
 
 SUBSCRIPTION_INACTIVE_MESSAGE = """
@@ -203,3 +132,59 @@ GENERATING_MESSAGE = "⏳ Generating AI prediction...\n\nThis takes a few second
 ERROR_TIMEOUT = "⏱ Request timed out. Please try again."
 ERROR_CONNECTION = "🔌 Server unreachable. Please try again shortly."
 ERROR_GENERAL = "❌ Something went wrong. Please try again."
+
+
+def upcoming_fixtures_message(league_name, page=0):
+    page_num = page + 1
+    return (
+        f"📅 *{league_name} — Upcoming Fixtures*\n\n"
+        f"Tap a match to see the AI prediction.\n"
+        f"_Page {page_num}_"
+    )
+
+
+def fixture_detail_message(home, away, league, match_date, match_time, round_, is_premium):
+    base = (
+        f"⚽ *{home} vs {away}*\n\n"
+        f"🏆 {league}\n"
+        f"📅 {match_date}  🕐 {match_time}\n"
+        f"🔄 {round_}\n\n"
+    )
+    if is_premium:
+        base += "🔮 *Tap below to get the full AI prediction.*"
+    else:
+        base += (
+            "👁 *Free Preview Available*\n\n"
+            "You'll see a teaser of the analysis.\n"
+            "Unlock full prediction with Premium — *$5/month.*"
+        )
+    return base
+
+
+def insight_message(home, away, insight):
+    if isinstance(insight, str):
+        return (
+            f"🔮 *AI Prediction — {home} vs {away}*\n\n"
+            f"{insight}\n\n"
+            f"_Powered by SportsBet AI_"
+        )
+
+    analysis = insight.get("analysis", "")
+    winner = insight.get("predicted_winner", "N/A")
+    confidence = insight.get("confidence", "N/A")
+    btts = insight.get("btts", "N/A")
+    over = insight.get("over_2_5", "N/A")
+    bet = insight.get("recommended_bet", "N/A")
+
+    return (
+        f"🔮 *AI Prediction — {home} vs {away}*\n\n"
+        f"📊 *Analysis:*\n{analysis}\n\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"🏆 *Predicted Winner:* {winner}\n"
+        f"🎯 *Confidence:* {confidence}\n"
+        f"⚽ *BTTS:* {btts}\n"
+        f"📈 *Over 2.5:* {over}\n"
+        f"💡 *Best Bet:* {bet}\n"
+        f"━━━━━━━━━━━━━━━━━━\n\n"
+        f"_Powered by SportsBet AI_"
+    )

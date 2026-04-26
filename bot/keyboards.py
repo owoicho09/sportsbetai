@@ -118,7 +118,6 @@ def after_insight_keyboard(fixture_id, league_id):
 def subscribe_keyboard():
     keyboard = [
         [InlineKeyboardButton("💳 Pay Now — $5/month", callback_data="pay_now")],
-        [InlineKeyboardButton("✅ I've Paid — Notify Admin", callback_data="paid_notify")],
         [InlineKeyboardButton("🔙 Back", callback_data="main_menu")],
     ]
     return InlineKeyboardMarkup(keyboard)
@@ -127,7 +126,6 @@ def subscribe_keyboard():
 def pay_now_keyboard(payment_link):
     keyboard = [
         [InlineKeyboardButton("💳 Complete Payment", url=payment_link)],
-        [InlineKeyboardButton("✅ I've Paid — Notify Admin", callback_data="paid_notify")],
         [InlineKeyboardButton("🔙 Back", callback_data="main_menu")],
     ]
     return InlineKeyboardMarkup(keyboard)

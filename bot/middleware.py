@@ -12,15 +12,22 @@ from django.utils import timezone
 import datetime
 
 
-# =========================================
-# Sync DB functions (called via sync_to_async)
-# =========================================
-
 def _is_premium_sync(user_id: int) -> bool:
     try:
         user = BotUser.objects.get(telegram_id=user_id)
-        return user.is_active_subscriber()
+        if not user.is_premium:
+            return False
+        if user.subscription_end is None:
+            return False
+        if user.subscription_end < timezone.now():
+            user.is_premium = False
+            user.save()
+            return False
+        return True
     except BotUser.DoesNotExist:
+        return False
+    except Exception as e:
+        print(f"[MIDDLEWARE] ERROR: {e}")
         return False
 
 
@@ -40,10 +47,6 @@ def _revoke_premium_sync(user_id: int):
     except BotUser.DoesNotExist:
         pass
 
-
-# =========================================
-# Async wrappers — use these in bot handlers
-# =========================================
 
 is_premium = sync_to_async(_is_premium_sync)
 grant_premium = sync_to_async(_grant_premium_sync)
