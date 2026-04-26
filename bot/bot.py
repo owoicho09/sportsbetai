@@ -20,7 +20,6 @@ from bot.handlers.insight import insight_handler, preview_handler
 from bot.handlers.subscription import (
     subscription_handler,
     subscribe_handler,
-    paid_notify_handler,
     grant_handler,
     revoke_handler
 )
@@ -65,7 +64,6 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # --- Pagination: fixtures_{league_id}_{page} ---
     elif data.startswith("fixtures_"):
         parts = data.split("_")
-        # format: fixtures_{league_id}_{page}
         if len(parts) == 3:
             league_id = parts[1]
             try:
@@ -77,9 +75,7 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # --- Fixture Selected → Show Detail ---
     elif data.startswith("fixture_"):
         fixture_id = data.replace("fixture_", "")
-        # Try to get league_id from context storage
         league_id = context.user_data.get("current_league_id", "0")
-        # Store fixture for back navigation
         context.user_data["current_fixture_id"] = fixture_id
         await fixture_detail_handler(update, context, fixture_id=fixture_id, league_id=league_id)
 
@@ -98,14 +94,8 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "subscription":
         await subscription_handler(update, context)
 
-    elif data == "subscribe":
+    elif data in ["subscribe", "pay_now"]:
         await subscribe_handler(update, context)
-
-    elif data == "pay_now":
-        await subscribe_handler(update, context)
-
-    elif data == "paid_notify":
-        await paid_notify_handler(update, context)
 
     # --- How It Works ---
     elif data == "how_it_works":
@@ -125,7 +115,6 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # =========================================
 
 async def league_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Intercept league selection to store league_id for back navigation."""
     query = update.callback_query
     data = query.data
 
@@ -146,12 +135,10 @@ def run_bot():
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Commands
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("grant", grant_handler))
     app.add_handler(CommandHandler("revoke", revoke_handler))
 
-    # All button taps routed through league_router → callback_router
     app.add_handler(CallbackQueryHandler(league_router))
 
     print("🤖 SportsBet AI Bot is running...")
