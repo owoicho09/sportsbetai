@@ -1,4 +1,5 @@
 anyio==4.13.0
+aiohttp
 asgiref==3.11.1
 certifi==2026.1.4
 charset-normalizer==3.4.4
