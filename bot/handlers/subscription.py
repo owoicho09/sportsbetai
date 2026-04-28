@@ -143,7 +143,7 @@ async def subscribe_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = query.from_user
 
     # Register user in DB so webhook can find them
-    _register_user(user)
+    #await _register_user(user)
 
     # Initialize transaction via Paystack API — this embeds telegram_id in metadata
     # so the webhook can identify who paid
