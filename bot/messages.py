@@ -3,17 +3,17 @@
 WELCOME_MESSAGE = """
 🤖 *SportsBet AI*
 
-Get AI-powered predictions for football matches.
-Stats, form, H2H analysis — all done for you.
+Your personal AI football analyst.
+Data-driven predictions. No noise. No guesswork.
 
-*What you get:*
-✅ Predicted winner
-✅ BTTS & Over 2.5 probability
-✅ Confidence rating
-✅ Best bet recommendation
+*Every prediction includes:*
+✅ Predicted winner & confidence rating
+✅ Both Teams to Score probability
+✅ Over / Under 2.5 goals
+✅ Best recommended bet
 
 Free users get a preview.
-Premium users get everything. *$5/month.*
+Premium unlocks everything — *$5/month.*
 
 👇 What would you like to do?
 """
@@ -21,94 +21,103 @@ Premium users get everything. *$5/month.*
 HOW_IT_WORKS_MESSAGE = """
 🧠 *How SportsBet AI Works*
 
-*Step 1 — Data*
-We pull live stats from top football APIs.
-Form, H2H history, home/away record.
+*① Data Collection*
+We pull live stats from top football data providers —
+form, H2H history, home/away records, goals data and more.
 
-*Step 2 — Analysis*
-Our AI processes everything and builds a match profile.
-No guessing. Pure data.
+*② AI Analysis*
+Our model processes every data point and builds
+a complete match profile. No gut feeling. Pure data.
 
-*Step 3 — Prediction*
-You get a clear, structured prediction:
-• Who wins
-• Will both teams score
-• Over or under 2.5 goals
-• Confidence level
+*③ Your Prediction*
+You receive a clear, structured breakdown:
+• Predicted winner with confidence level
+• Both Teams to Score probability  
+• Over/Under 2.5 goals
 • Best recommended bet
 
-*Step 4 — You decide*
-Use it as your edge. The rest is up to you.
+*④ You Decide*
+Use it as your edge. We give you the analysis —
+the final call is always yours.
 
+━━━━━━━━━━━━━━━━━━
 💎 *Premium — $5/month*
-Unlimited predictions. Every match. Every week.
+Unlimited predictions. Every match. Every league.
+Multi-match analysis in one tap.
+Cancel anytime.
 """
 
 CHOOSE_LEAGUE_MESSAGE = """
-🏆 *Choose a League*
+🏆 *Select a League*
 
-Select the league you want predictions for.
-More leagues coming soon.
+Choose the league you want predictions for.
 """
 
 NO_LEAGUES_MESSAGE = """
-😕 No leagues available right now.
-Check back soon — we're adding more.
+😕 *No leagues available right now.*
+
+We're loading fixtures for the next matchday.
+Check back soon — we update regularly.
 """
 
 NO_FIXTURES_MESSAGE = """
 📭 *No upcoming fixtures found.*
 
-Either all matches have been played
-or fixtures haven't been loaded yet.
+All matches may have been played or fixtures
+haven't been published yet for this league.
 
-Check back closer to the next matchday.
+Try another league or check back closer to matchday.
 """
 
 TEASER_PAYWALL_MESSAGE = """
 🔒 *Full Prediction Locked*
 
-You've seen the teams and the matchup.
-The full AI breakdown is one step away.
+You're one step away from the full AI breakdown.
 
-*What's behind the lock:*
+*What Premium unlocks:*
 ✅ Predicted winner with confidence rating
-✅ BTTS probability
-✅ Over/Under 2.5 analysis
-✅ Recommended bet
+✅ Both Teams to Score probability
+✅ Over / Under 2.5 analysis
+✅ AI-recommended best bet
+✅ Multiple match predictions 
 
-*$5/month — less than one bet.*
-Cancel anytime.
+*$5/month — less than the cost of one bad bet.*
+Cancel anytime. Instant access after payment.
 
-👇 Tap to unlock everything.
+👇 Tap below to unlock.
 """
 
 PAYMENT_INSTRUCTIONS_MESSAGE = """
 💳 *Upgrade to Premium*
 
-*Price:* $5/month
-*Access:* Unlimited predictions. All matches.
+*Price:* $5 / month
+*Access:* Unlimited predictions. All matches. All leagues.
 
-*How to pay:*
-1. Tap the button below
-2. Complete payment on Paystack
-3. You're unlocked *instantly* ✅
+*How it works:*
+1️⃣ Tap the button below
+2️⃣ Complete payment securely via Paystack
+3️⃣ You're unlocked *instantly* ✅
 
-_Payment is processed securely by Paystack._
+_Your access activates the moment payment is confirmed._
 """
 
 PREMIUM_ALREADY_ACTIVE = """
-✅ *Your Premium is Active*
+✅ *Premium Active*
 
 You have full access to all predictions.
+
 Go get your edge 🎯
 """
 
 PREMIUM_GRANTED_MESSAGE = """
-🎉 *Payment Confirmed — You're In!*
+🎉 *You're In — Welcome to Premium!*
 
-Your Premium is now active.
-You have full access to all AI predictions.
+Payment confirmed. Your access is now active.
+
+Here's what you can do:
+⚽ Get AI predictions for any match
+📊 Analyse multiple fixtures at once
+🎯 See confidence ratings & best bets
 
 Tap below to get your first prediction 👇
 """
@@ -119,44 +128,87 @@ SUBSCRIPTION_INACTIVE_MESSAGE = """
 You're currently on the free plan.
 
 Upgrade to Premium for *$5/month* and unlock:
-✅ Full AI predictions
-✅ Confidence ratings
-✅ Recommended bets
-✅ Unlimited matches
+✅ Full AI predictions for every match
+✅ Confidence ratings & recommended bets
+✅ Multi-match predictions in one tap
+✅ Unlimited access — all leagues
 
-👇 Tap below to upgrade.
+👇 Tap below to upgrade instantly.
 """
 
-GENERATING_MESSAGE = "⏳ Generating AI prediction...\n\nThis takes a few seconds."
+GENERATING_MESSAGE = """
+⚙️ *Analysing match data...*
 
-ERROR_TIMEOUT = "⏱ Request timed out. Please try again."
-ERROR_CONNECTION = "🔌 Server unreachable. Please try again shortly."
-ERROR_GENERAL = "❌ Something went wrong. Please try again."
+Pulling stats, form, H2H records and team news.
+This usually takes 10–20 seconds.
+
+"""
+
+GENERATING_MULTI_MESSAGE = """
+⚙️ *Analysing multiple fixtures...*
+
+Running AI analysis on each match.
+This may take 30–60 seconds depending on the number selected.
+
+"""
+
+SELECT_FIXTURES_MESSAGE = """
+📋 *Select Fixtures to Analyse*
+
+Tap the matches you want predictions for.
+When you're done, tap *✅ Get Predictions*.
+
+_Premium feature — unlimited selections._
+"""
+
+ERROR_TIMEOUT = """
+⏱ *Request timed out.*
+
+The server took too long to respond.
+Please try again in a moment.
+"""
+
+ERROR_CONNECTION = """
+🔌 *Could not reach the server.*
+
+Please check your connection and try again.
+If this keeps happening, our server may be restarting.
+"""
+
+ERROR_GENERAL = """
+❌ *Something went wrong.*
+
+Please try again. If the issue persists,
+contact support.
+"""
 
 
-def upcoming_fixtures_message(league_name, page=0):
+def upcoming_fixtures_message(league_name: str, page: int = 0) -> str:
     page_num = page + 1
     return (
-        f"📅 *{league_name} — Upcoming Fixtures*\n\n"
-        f"Tap a match to see the AI prediction.\n"
+        f"📅 *{league_name}*\n\n"
+        f"Select a fixture to see the AI prediction.\n"
         f"_Page {page_num}_"
     )
 
 
 def fixture_detail_message(home, away, league, match_date, match_time, round_, is_premium):
+    status = "💎 *Premium*" if is_premium else "🆓 *Free Preview*"
     base = (
         f"⚽ *{home} vs {away}*\n\n"
         f"🏆 {league}\n"
-        f"📅 {match_date}  🕐 {match_time}\n"
+        f"📅 {match_date}   🕐 {match_time}\n"
         f"🔄 {round_}\n\n"
+        f"━━━━━━━━━━━━━━━━━━\n"
+        f"Account: {status}\n"
+        f"━━━━━━━━━━━━━━━━━━\n\n"
     )
     if is_premium:
-        base += "🔮 *Tap below to get the full AI prediction.*"
+        base += "Tap below to get the full AI prediction 👇"
     else:
         base += (
-            "👁 *Free Preview Available*\n\n"
-            "You'll see a teaser of the analysis.\n"
-            "Unlock full prediction with Premium — *$5/month.*"
+            "Tap *See Preview* for a free teaser.\n"
+            "Unlock the full breakdown with Premium — *$5/month.*"
         )
     return base
 
@@ -164,27 +216,66 @@ def fixture_detail_message(home, away, league, match_date, match_time, round_, i
 def insight_message(home, away, insight):
     if isinstance(insight, str):
         return (
-            f"🔮 *AI Prediction — {home} vs {away}*\n\n"
+            f"🔮 *{home} vs {away}*\n\n"
             f"{insight}\n\n"
             f"_Powered by SportsBet AI_"
         )
 
-    analysis = insight.get("analysis", "")
-    winner = insight.get("predicted_winner", "N/A")
-    confidence = insight.get("confidence", "N/A")
-    btts = insight.get("btts", "N/A")
-    over = insight.get("over_2_5", "N/A")
-    bet = insight.get("recommended_bet", "N/A")
+    analysis    = insight.get("analysis", "")
+    winner      = (insight.get("predicted_winner") or "N/A").title()
+    confidence  = (insight.get("confidence") or "N/A").title()
+    btts        = (insight.get("btts") or "N/A").title()
+    over        = (insight.get("over_2_5") or "N/A").title()
+    bet         = insight.get("recommended_bet", "N/A")
+
+    # Confidence emoji
+    conf_emoji = {"High": "🟢", "Medium": "🟡", "Low": "🔴"}.get(confidence, "⚪")
 
     return (
-        f"🔮 *AI Prediction — {home} vs {away}*\n\n"
-        f"📊 *Analysis:*\n{analysis}\n\n"
+        f"🔮 *{home} vs {away}*\n\n"
+        f"📊 *Analysis*\n"
+        f"{analysis}\n\n"
         f"━━━━━━━━━━━━━━━━━━\n"
-        f"🏆 *Predicted Winner:* {winner}\n"
-        f"🎯 *Confidence:* {confidence}\n"
+        f"🏆 *Winner:* {winner}\n"
+        f"🎯 *Confidence:* {conf_emoji} {confidence}\n"
         f"⚽ *BTTS:* {btts}\n"
         f"📈 *Over 2.5:* {over}\n"
         f"💡 *Best Bet:* {bet}\n"
         f"━━━━━━━━━━━━━━━━━━\n\n"
         f"_Powered by SportsBet AI_"
     )
+
+
+def multi_insight_message(predictions: list[dict]) -> str:
+    """
+    Format multiple predictions into one clean message.
+    predictions: list of dicts with home, away, insight keys
+    """
+    lines = [f"🔮 *Multi-Match AI Predictions*\n"]
+
+    for i, pred in enumerate(predictions, 1):
+        home    = pred.get("home", "Home")
+        away    = pred.get("away", "Away")
+        insight = pred.get("insight", {})
+
+        if isinstance(insight, str) or not insight:
+            lines.append(f"*{i}. {home} vs {away}*\n❌ Prediction unavailable\n")
+            continue
+
+        winner     = (insight.get("predicted_winner") or "N/A").title()
+        confidence = (insight.get("confidence") or "N/A").title()
+        btts       = (insight.get("btts") or "N/A").title()
+        over       = (insight.get("over_2_5") or "N/A").title()
+        bet        = insight.get("recommended_bet", "N/A")
+        conf_emoji = {"High": "🟢", "Medium": "🟡", "Low": "🔴"}.get(confidence, "⚪")
+
+        lines.append(
+            f"*{i}. {home} vs {away}*\n"
+            f"🏆 {winner}  {conf_emoji} {confidence}\n"
+            f"⚽ BTTS: {btts}  📈 O2.5: {over}\n"
+            f"💡 {bet}\n"
+        )
+
+    lines.append("━━━━━━━━━━━━━━━━━━")
+    lines.append("_Powered by SportsBet AI_")
+    return "\n".join(lines)

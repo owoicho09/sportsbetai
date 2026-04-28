@@ -17,6 +17,7 @@ API_BASE = os.getenv("API_BASE")
 async def leagues_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    await query.edit_message_text("Please wait...")
 
     print(f"\n[LEAGUES] Fetching leagues from {API_BASE}/leagues/")
 
