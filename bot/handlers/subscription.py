@@ -1,8 +1,9 @@
 # bot/handlers/subscription.py
 
 import os
-import urllib.parse
+import asyncio
 import django
+import requests as http_requests
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -29,24 +30,51 @@ load_dotenv()
 # =========================================
 
 ADMIN_ID = int(os.getenv("ADMIN_TELEGRAM_ID", "0"))
-PAYSTACK_PAYMENT_PAGE = os.getenv("PAYMENT_LINK", "https://paystack.shop/pay/9knp4sqd53")
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "")
+PAYSTACK_AMOUNT_KOBO = int(os.getenv("PAYSTACK_AMOUNT_KOBO", "500000"))  # default 5000 NGN
 
 
 # =========================================
 # Helpers
 # =========================================
 
-def generate_payment_link(telegram_id: int, username: str = "") -> str:
+def _initialize_paystack_transaction(telegram_id: int, username: str = "") -> str | None:
     """
-    Generate Paystack payment URL with telegram_id embedded in metadata.
-    Paystack will send this back in the webhook so we know who paid.
+    Call Paystack Initialize Transaction API so metadata.telegram_id
+    is embedded in the transaction and returned in the webhook.
+    This replaces the old static payment page link approach which
+    did NOT forward query params back in the webhook.
     """
-    params = urllib.parse.urlencode({
-        "telegram_id": telegram_id,
-        "ref": f"tg_{telegram_id}",         # unique reference per user
-        "email": f"{telegram_id}@sportsbetai.app",  # placeholder — Paystack requires email
-    })
-    return f"{PAYSTACK_PAYMENT_PAGE}?{params}"
+    payload = {
+        "email": f"{telegram_id}@sportsbetai.app",
+        "amount": PAYSTACK_AMOUNT_KOBO,
+        "metadata": {
+            "telegram_id": str(telegram_id),
+            "username": username,
+        },
+    }
+
+    try:
+        resp = http_requests.post(
+            "https://api.paystack.co/transaction/initialize",
+            json=payload,
+            headers={
+                "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+                "Content-Type": "application/json",
+            },
+            timeout=10,
+        )
+        data = resp.json()
+        if data.get("status"):
+            url = data["data"]["authorization_url"]
+            print(f"[SUBSCRIPTION] Paystack transaction initialized for {telegram_id}: {url}")
+            return url
+        else:
+            print(f"[SUBSCRIPTION] Paystack init failed: {data.get('message')}")
+            return None
+    except Exception as e:
+        print(f"[SUBSCRIPTION] Exception during Paystack init: {e}")
+        return None
 
 
 def _register_user(telegram_user):
@@ -68,7 +96,6 @@ def _register_user(telegram_user):
             }
         )
         if not created:
-            # Update username in case it changed
             user.telegram_username = telegram_user.username or ""
             user.first_name = telegram_user.first_name or ""
             user.save(update_fields=["telegram_username", "first_name"])
@@ -92,7 +119,7 @@ async def subscription_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     print(f"[SUBSCRIPTION] User {user_id} checking subscription status")
 
-    if await  is_premium(user_id):
+    if await is_premium(user_id):
         print(f"[SUBSCRIPTION] User {user_id} is premium")
         await query.edit_message_text(
             PREMIUM_ALREADY_ACTIVE,
@@ -109,7 +136,7 @@ async def subscription_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
 
 async def subscribe_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Show payment page with personalised Paystack link."""
+    """Generate a personalised Paystack transaction link and show payment page."""
     query = update.callback_query
     await query.answer()
 
@@ -118,10 +145,20 @@ async def subscribe_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Register user in DB so webhook can find them
     _register_user(user)
 
-    # Generate personalised payment link with telegram_id embedded
-    payment_link = generate_payment_link(user.id, user.username or "")
+    # Initialize transaction via Paystack API — this embeds telegram_id in metadata
+    # so the webhook can identify who paid
+    loop = asyncio.get_event_loop()
+    payment_link = await loop.run_in_executor(
+        None, _initialize_paystack_transaction, user.id, user.username or ""
+    )
 
-    print(f"[SUBSCRIPTION] Generated payment link for user {user.id}: {payment_link}")
+    if not payment_link:
+        await query.edit_message_text(
+            "⚠️ Could not generate payment link. Please try again later.",
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=back_to_menu_keyboard()
+        )
+        return
 
     await query.edit_message_text(
         PAYMENT_INSTRUCTIONS_MESSAGE,
@@ -140,7 +177,7 @@ async def grant_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         target_id = int(context.args[0])
-        grant_premium(target_id)
+        await grant_premium(target_id)
 
         print(f"[SUBSCRIPTION] Admin manually granted premium to {target_id}")
 
@@ -177,7 +214,7 @@ async def revoke_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         target_id = int(context.args[0])
-        revoke_premium(target_id)
+        await revoke_premium(target_id)
 
         print(f"[SUBSCRIPTION] Admin manually revoked premium for {target_id}")
 

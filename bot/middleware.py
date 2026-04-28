@@ -17,9 +17,8 @@ def _is_premium_sync(user_id: int) -> bool:
         user = BotUser.objects.get(telegram_id=user_id)
         if not user.is_premium:
             return False
-        if user.subscription_end is None:
-            return False
-        if user.subscription_end < timezone.now():
+        # None = no expiry (e.g. admin-granted)
+        if user.subscription_end is not None and user.subscription_end < timezone.now():
             user.is_premium = False
             user.save()
             return False

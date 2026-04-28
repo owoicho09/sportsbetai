@@ -153,9 +153,6 @@ class FixtureListAPIView(APIView):
         finished_statuses = ["FT", "AET", "PEN", "AWD", "WO"]
 
         if upcoming:
-            # TEMP: remove date filter for testing with 2024 data
-            # When 2025 data is loaded uncomment the lines below and remove pass
-            # fixtures = fixtures.filter(date__date__gte=today).exclude(status_short__in=finished_statuses)
             pass
 
         elif date_param:
@@ -340,6 +337,7 @@ def _extract_telegram_id(data):
         if tid:
             return int(tid)
 
+    # Fallback: email was set as {telegram_id}@sportsbetai.app
     customer = data.get("customer", {})
     email = customer.get("email", "")
     if "@sportsbetai.app" in email:
@@ -353,20 +351,25 @@ def _extract_telegram_id(data):
 
 
 def _handle_charge_success(data):
+    # Debug logs so you can see exactly what Paystack sends
+    print(f"[WEBHOOK] charge.success — metadata: {data.get('metadata')}")
+    print(f"[WEBHOOK] charge.success — customer email: {data.get('customer', {}).get('email')}")
+
     telegram_id = _extract_telegram_id(data)
     if not telegram_id:
+        print("[WEBHOOK] charge.success — could not resolve telegram_id, aborting")
         return
 
     customer_code = data.get("customer", {}).get("customer_code", "")
 
-    user, _ = BotUser.objects.get_or_create(telegram_id=telegram_id)
+    user, created = BotUser.objects.get_or_create(telegram_id=telegram_id)
     user.is_premium = True
     user.subscription_start = timezone.now()
     user.subscription_end = timezone.now() + datetime.timedelta(days=30)
     user.paystack_customer_code = customer_code
     user.save()
 
-    print(f"[WEBHOOK] Premium granted — telegram_id={telegram_id}, expires={user.subscription_end}")
+    print(f"[WEBHOOK] Premium granted — telegram_id={telegram_id}, expires={user.subscription_end}, new_user={created}")
 
     _send_telegram_message(
         telegram_id,
@@ -398,7 +401,7 @@ def _handle_subscription_disable(data):
             user.telegram_id,
             text=(
                 "⚠️ *Your Premium subscription has ended.*\n\n"
-                "Renew anytime for $5/month to restore full access.\n"
+                "Renew anytime to restore full access.\n"
                 "Tap /start to subscribe again."
             )
         )
