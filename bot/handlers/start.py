@@ -17,7 +17,7 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if created:
         loop = asyncio.get_event_loop()
-        loop.run_in_executor(
+        await loop.run_in_executor(
             None,
             send_new_user_email,
             user.id,

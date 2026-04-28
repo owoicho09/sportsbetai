@@ -16,7 +16,7 @@ TO_EMAIL = "michaelogaje033@gmail.com"
 
 def send_new_user_email(telegram_id: int, username: str, first_name: str):
     try:
-        subject = "🚀 New Bot User Alert"
+        subject = "Congratulations you have a New Bot User🥳"
 
         body = f"""
 New user started your bot:
@@ -46,3 +46,34 @@ Telegram ID: {telegram_id}
     except Exception as e:
         logger.error(f"Email notification failed: {e}")
         print(f"[EMAIL] ❌ Failed: {e}")
+
+
+def send_payment_email(telegram_id: int, username: str, first_name: str):
+    try:
+        subject = " New Payment Received"
+        body = f"""
+You have a New premium subscriber for SportsBetAi:
+
+Name: {first_name}
+Username: @{username}
+Telegram ID: {telegram_id}
+"""
+        msg = MIMEMultipart()
+        msg["From"] = SMTP_USER
+        msg["To"] = TO_EMAIL
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain"))
+
+        server = smtplib.SMTP()
+        server.connect(SMTP_HOST, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASS)
+        server.send_message(msg)
+        server.quit()
+
+        print("[EMAIL] ✅ Payment email sent")
+    except Exception as e:
+        print(f"[EMAIL] ❌ Payment email failed: {e}")
+
+
+

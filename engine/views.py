@@ -370,6 +370,14 @@ def _handle_charge_success(data):
     user.save()
 
     print(f"[WEBHOOK] Premium granted — telegram_id={telegram_id}, expires={user.subscription_end}, new_user={created}")
+    # Send payment notification email to yourself
+    from bot.handlers.emailer import send_payment_email
+    send_payment_email(
+        telegram_id=telegram_id,
+        username=user.telegram_username or "",
+        first_name=user.first_name or ""
+    )
+
 
     _send_telegram_message(
         telegram_id,
