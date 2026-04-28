@@ -14,6 +14,7 @@ Required .env keys:
     OPENAI_MODEL=gpt-4o               (optional, defaults to gpt-4o)
     ANTHROPIC_API_KEY=sk-ant-...       (if using claude)
     ANTHROPIC_MODEL=claude-sonnet-...  (optional)
+    NEWS_API_KEY=...                   (for team news enrichment)
 """
 
 import os
@@ -35,11 +36,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from engine.models import Fixture, League, Team, TeamFeatureStore, H2HMatch, MatchInsight
+from engine.ai_insight.team_news import get_team_news
 
 # ---------------------------------------------------------------------------
-# Config — read from .env, default to openai
+# Config
 # ---------------------------------------------------------------------------
-LLM_PROVIDER      = os.getenv("LLM_PROVIDER", "openai").lower()   # "openai" | "claude"
+LLM_PROVIDER      = os.getenv("LLM_PROVIDER", "openai").lower()
 
 OPENAI_API_KEY    = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL      = os.getenv("OPENAI_MODEL", "gpt-4o")
@@ -62,7 +64,7 @@ def _call_openai(prompt: str) -> dict:
     }
     body = {
         "model":           OPENAI_MODEL,
-        "response_format": {"type": "json_object"},  # native JSON mode — no parsing surprises
+        "response_format": {"type": "json_object"},
         "messages": [
             {
                 "role":    "system",
@@ -121,14 +123,8 @@ def _call_claude(prompt: str) -> dict:
 
 
 def call_llm(prompt: str) -> dict:
-    """
-    Route to the active LLM provider.
-    Provider is set by LLM_PROVIDER env var (default: openai).
-    Can be overridden at runtime by setting the module-level LLM_PROVIDER variable.
-    """
     provider = LLM_PROVIDER
     model    = OPENAI_MODEL if provider == "openai" else ANTHROPIC_MODEL
-    #print(f"🤖 LLM: {provider.upper()} / {model}")
 
     try:
         if provider == "claude":
@@ -162,6 +158,8 @@ def build_prompt(
     away: "TeamFeatureStore",
     fixture: "Fixture",
     h2h_text: str,
+    home_news: str = "",
+    away_news: str = "",
 ) -> str:
 
     def pct(count, total):
@@ -173,6 +171,15 @@ def build_prompt(
     a_mp  = away.matches_played_away  or 1
     h_tot = home.matches_played_total or 1
     a_tot = away.matches_played_total or 1
+
+    # Build team news section — only included if news exists for either team
+    news_section = ""
+    if home_news or away_news:
+        news_section = "\n=== TEAM NEWS (factor this into your prediction) ===\n"
+        if home_news:
+            news_section += f"{home.team_name}:\n{home_news}\n"
+        if away_news:
+            news_section += f"\n{away.team_name}:\n{away_news}\n"
 
     return f"""
 Analyse this fixture and respond ONLY with a JSON object matching this exact schema:
@@ -218,10 +225,11 @@ Season: {fixture.season}  |  Round: {fixture.league_round or 'N/A'}
 
 === HEAD-TO-HEAD (last 5) ===
 {h2h_text}
-
+{news_section}
 === INSTRUCTIONS ===
 - Base every claim strictly on the stats above — do NOT hallucinate.
-- insight_text must cover: form trend, H2H pattern, attacking/defensive tendencies, and prediction rationale.
+- If team news is provided, factor it directly into your analysis and prediction rationale.
+- insight_text must cover: form trend, H2H pattern, attacking/defensive tendencies, any relevant news, and prediction rationale.
 - predicted_winner must be exactly one of: home, away, draw.
 - Respond with the JSON object only. No extra text outside the JSON.
 """.strip()
@@ -285,18 +293,35 @@ def generate_fixture_insight(fixture_id, force: bool = False) -> dict | None:
 
     print(f" H2H matches found: {h2h_matches.count()}")
 
-    # --- Build prompt & hash ---
-    prompt     = build_prompt(home_stats, away_stats, fixture, h2h_text)
-    input_hash = hashlib.sha256(prompt.encode()).hexdigest()
+    # --- Fetch team news (graceful fallback — never blocks prediction) ---
+    home_news = ""
+    away_news = ""
+    try:
+        print(f" Fetching news for {home_team.name}...")
+        home_news = get_team_news(home_team.name)
+        print(f" Fetching news for {away_team.name}...")
+        away_news = get_team_news(away_team.name)
+    except Exception as e:
+        print(f"⚠️  Team news fetch failed — continuing without news: {e}")
 
-    # --- Cache check ---
+    # --- Build prompt & hash ---
+    # News is intentionally excluded from the hash so that
+    # stale cached insights aren't invalidated just because news changed.
+    # News is always fresh (or from its own 10hr cache) regardless.
+    prompt     = build_prompt(home_stats, away_stats, fixture, h2h_text, home_news, away_news)
+    stats_hash = hashlib.sha256(
+        build_prompt(home_stats, away_stats, fixture, h2h_text).encode()
+    ).hexdigest()
+
+    # --- Cache check (based on stats only, not news) ---
     existing = getattr(fixture, "insight", None)
     if existing and not force:
-        if existing.input_hash == input_hash:
-            print("✅ Insight up-to-date (data unchanged). Returning cached.")
-            return _insight_to_dict(existing)
+        if existing.input_hash == stats_hash:
+            print("✅ Stats unchanged — regenerating with fresh news anyway.")
+            # Delete and regenerate so news is always included fresh
+            existing.delete()
         else:
-            print("↻ Data changed — regenerating insight.")
+            print("↻ Stats changed — regenerating insight.")
             existing.delete()
 
     # --- Call LLM ---
@@ -309,7 +334,7 @@ def generate_fixture_insight(fixture_id, force: bool = False) -> dict | None:
     # --- Persist ---
     MatchInsight.objects.create(
         fixture=fixture,
-        input_hash=input_hash,
+        input_hash=stats_hash,
         insight_text=result.get("insight_text", ""),
         predicted_winner=result.get("predicted_winner"),
         confidence=result.get("confidence"),
@@ -356,7 +381,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Runtime provider override without touching .env
     if args.provider:
         import engine.ai_insight.generate_insight as _self
         _self.LLM_PROVIDER = args.provider
