@@ -48,16 +48,18 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     data  = query.data
 
-    # ── Main Menu ────────────────────────────────────────────
+    # Answer immediately — must happen before any async work
+    # so Telegram doesn't expire the callback query token.
+    # NO handler should call query.answer() after this point.
+    await query.answer()
+
     if data == "main_menu":
-        await query.answer()
         await query.edit_message_text(
             WELCOME_MESSAGE,
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=main_menu_keyboard(),
         )
 
-    # ── League / Fixture flow ────────────────────────────────
     elif data == "get_prediction":
         await leagues_handler(update, context)
 
@@ -83,13 +85,10 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data["current_fixture_id"] = fixture_id
         await fixture_detail_handler(update, context, fixture_id=fixture_id, league_id=league_id)
 
-    # ── Multi-select flow (Premium) ──────────────────────────
     elif data.startswith("multi_select_"):
-        # multi_select_{league_id}_{page}
         parts     = data.split("_")
         league_id = parts[2]
         page      = int(parts[3]) if len(parts) > 3 else 0
-        # Clear any previous selection when entering multi-select
         context.user_data["selected_fixture_ids"] = []
         await multi_select_handler(update, context, league_id=league_id, page=page)
 
@@ -101,7 +100,6 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         league_id = data.replace("run_multi_", "")
         await multi_insight_handler(update, context, league_id=league_id)
 
-    # ── Predictions ──────────────────────────────────────────
     elif data.startswith("preview_"):
         fixture_id = data.replace("preview_", "")
         await preview_handler(update, context, fixture_id=fixture_id)
@@ -111,16 +109,13 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         league_id  = context.user_data.get("current_league_id", "0")
         await insight_handler(update, context, fixture_id=fixture_id, league_id=league_id)
 
-    # ── Subscription ─────────────────────────────────────────
     elif data == "subscription":
         await subscription_handler(update, context)
 
     elif data in ["subscribe", "pay_now"]:
         await subscribe_handler(update, context)
 
-    # ── How it works ─────────────────────────────────────────
     elif data == "how_it_works":
-        await query.answer()
         await query.edit_message_text(
             HOW_IT_WORKS_MESSAGE,
             parse_mode=ParseMode.MARKDOWN,
@@ -128,34 +123,27 @@ async def callback_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     else:
-        await query.answer("Unknown action.", show_alert=False)
+        pass  # query already answered above, just ignore unknown actions
 
 
 async def league_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Single entry point for all callback queries."""
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
+    data = update.callback_query.data
     if data.startswith("league_"):
-        league_id = data.replace("league_", "")
-        context.user_data["current_league_id"] = league_id
-
+        context.user_data["current_league_id"] = data.replace("league_", "")
     await callback_router(update, context)
 
 
-def run_bot():
-    if not BOT_TOKEN:
-        raise ValueError("TELEGRAM_BOT_TOKEN not set in .env")
-
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
-
+def get_app():
+    """Called by webhook.py to get the configured app instance."""
+    app = (
+        ApplicationBuilder()
+        .token(BOT_TOKEN)
+        .updater(None)
+        .build()
+    )
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("grant", grant_handler))
     app.add_handler(CommandHandler("revoke", revoke_handler))
     app.add_handler(CallbackQueryHandler(league_router))
-
-    print("🤖 SportsBet AI Bot is running...")
-    #app.run_polling(drop_pending_updates=True)
     return app
-

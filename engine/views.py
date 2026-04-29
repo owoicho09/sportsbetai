@@ -47,11 +47,10 @@ def health_check(request):
     return Response({"status": "healthy", "message": "API is running"}, status=status.HTTP_200_OK)
 
 
-@api_view(['GET'])
+# In views.py — replace your ping view
+@api_view(['GET', 'HEAD'])
 def ping(request):
     return Response({"message": "pong"}, status=status.HTTP_200_OK)
-
-
 # =========================================
 # Fixture ViewSet
 # =========================================
