@@ -156,8 +156,6 @@ def run_bot():
     app.add_handler(CallbackQueryHandler(league_router))
 
     print("🤖 SportsBet AI Bot is running...")
-    app.run_polling(drop_pending_updates=True)
+    #app.run_polling(drop_pending_updates=True)
+    return app
 
-
-if __name__ == "__main__":
-    run_bot()
