@@ -29,7 +29,7 @@ urlpatterns = [
 
     # Webhooks
     path('webhook/paystack/',  paystack_webhook,  name='paystack-webhook'),
-    path('webhook/telegram/',  telegram_webhook,  name='telegram-webhook'),
+    #path('webhook/telegram/',  telegram_webhook,  name='telegram-webhook'),
 
     # Fixtures
     path('fixtures/upcoming/', upcoming_fixtures,          name='fixture-upcoming'),
