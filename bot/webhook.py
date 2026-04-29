@@ -1,16 +1,19 @@
 from telegram import Update
 from bot.bot import get_app
 
-# Initialize once at module load
 _app = get_app()
+
+_initialized = False
 
 
 async def process_update(update_data: dict):
-    # Only initialize once
-    if not _app.initialized:
+    global _initialized
+
+    # Initialize ONLY once
+    if not _initialized:
         await _app.initialize()
+        _initialized = True
 
     update = Update.de_json(update_data, _app.bot)
 
-    # Process update only
     await _app.process_update(update)
