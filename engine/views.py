@@ -437,22 +437,23 @@ def _send_telegram_message(telegram_id, text, reply_markup=None):
         print(f"[WEBHOOK] Failed to send message: {e}")
 
 
+
+
+
 # =========================================
-# Telegram Webhook View (FIXED)
+# Telegram Webhook View
+# — append this to the bottom of engine/views.py
 # =========================================
 
-import json
-import threading
-
-from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse
-
+import asyncio
 from asgiref.sync import async_to_sync
-
 
 @csrf_exempt
 def telegram_webhook(request):
-
+    """
+    Receives POST requests from Telegram.
+    Telegram calls this URL every time a user sends a message or taps a button.
+    """
     if request.method != "POST":
         return HttpResponse(status=405)
 
@@ -463,15 +464,10 @@ def telegram_webhook(request):
 
     try:
         from bot.webhook import process_update
-
-        # Run processing in background thread
-        threading.Thread(
-            target=lambda: async_to_sync(process_update)(update_data),
-            daemon=True
-        ).start()
-
+        async_to_sync(process_update)(update_data)
     except Exception as e:
+        # Never return non-200 to Telegram — it will retry repeatedly
         print(f"[TELEGRAM WEBHOOK] Error processing update: {e}")
 
-    # Return immediately
+    # Always return 200 to Telegram immediately
     return HttpResponse(status=200)
